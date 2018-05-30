@@ -1,6 +1,8 @@
 <template>
   <div id="app">
-    <img src="./assets/logo.png">
+  <el-menu class="el-menu-demo" mode="horizontal">
+    <el-menu-item index="1"><router-link to="BezierSpeedLine">BezierSpeedLine</router-link></el-menu-item>
+  </el-menu>
     <router-view/>
   </div>
 </template>
@@ -11,13 +13,5 @@ export default {
 }
 </script>
 
-<style>
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+<style lang="less">
 </style>
