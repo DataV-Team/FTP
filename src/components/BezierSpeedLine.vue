@@ -1,6 +1,30 @@
 <template>
   <div id="test-container">
-    <canvas id="test"></canvas>
+    <canvas id="bezier-speed-line"></canvas>
+    <div class="line-perform">
+      <div class="line-info">
+        Current-Bezier-Line(
+          <input type="number" v-model="bezierLinePoints.ccpx" @change="setBezierLinePoints">,
+          <input type="number" v-model="bezierLinePoints.ccpy" @change="setBezierLinePoints">,
+          <input type="number" v-model="bezierLinePoints.lcpx" @change="setBezierLinePoints">,
+          <input type="number" v-model="bezierLinePoints.lcpy" @change="setBezierLinePoints">
+        )
+      </div>
+      <div class="k-value">
+        T-K-Relation(T=
+          <input type="number" v-model="bezierLineT" @change="drawLineTK">,
+          K= {{ bezierLineK }}
+        )
+      </div>
+      <div class="animation-time">
+        AnimationTime =
+        <input type="number" v-model="animationTime"> S
+        <span @click="moveBox">Play Again</span>
+      </div>
+      <div class="line-speed">
+        <div id="speed-item"></div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -47,7 +71,32 @@ export default {
       blueColor: '#00a1e4',
       greenColor: '#69d2cd',
       yellowColor: '#fed368',
-      grayColor: 'rgba(180, 180, 180, 0.5)'
+      grayColor: 'rgba(180, 180, 180, 0.5)',
+      // 展示数据
+      bezierLinePoints: {
+        ccpx: 0,
+        ccpy: 0,
+        lcpx: 0,
+        lcpy: 0
+      },
+      // 贝塞尔函数t时刻
+      bezierLineT: 0,
+      // 贝塞尔函数t时刻k值
+      bezierLineK: 0,
+      // 动画时间
+      animationTime: 3,
+      // 播放动画的容器DOM
+      lineSpeedBox: {},
+      // 播放动画的方块
+      speedItem: {},
+      // 方块位置数据
+      itemData: {
+        left: 10
+      },
+      // 是否可以播放动画
+      animationStatus: true,
+      // 每一帧的时间 ms
+      frameTime: 15
     }
   },
   methods: {
@@ -199,8 +248,9 @@ export default {
 
       this.clickStatus = false
     },
+    // mousemove行为
     mouseMove (e) {
-      let { begin, end } = this
+      let { begin, end, bezierLineT } = this
 
       let mouse = this.getMouseTruePos(e)
 
@@ -210,7 +260,11 @@ export default {
         end.lcp = mouse
       }
 
+      this.tranShowPointsData()
+
       this.drawSpeedTimeLine()
+
+      if (bezierLineT) this.drawLineTK()
     },
     // 计算点坐标使只居中
     calcPointsPosMiddle () {
@@ -233,40 +287,177 @@ export default {
       end.mp = this.tranPointsPos(end.mp)
       end.lcp = this.tranPointsPos(end.lcp)
     },
-    // test
-    draw () {
+    // 转换展示数据至真实数据
+    tranShowPointsData () {
+      let { begin, end, bezierLinePoints, canvasWH } = this
+
+      let ccp = this.tranPointsPos(begin.ccp)
+      let lcp = this.tranPointsPos(end.lcp)
+
+      let scale = 1 / canvasWH.width
+      let minusH = (canvasWH.height - canvasWH.width) / 2
+
+      bezierLinePoints.ccpx = (ccp.x * scale).toFixed(3)
+      bezierLinePoints.ccpy = ((ccp.y - minusH) * scale).toFixed(3)
+      bezierLinePoints.lcpx = (lcp.x * scale).toFixed(3)
+      bezierLinePoints.lcpy = ((lcp.y - minusH) * scale).toFixed(3)
+    },
+    // 设置控制点
+    setBezierLinePoints () {
+      let { begin, end, bezierLinePoints, canvasWH, bezierLineT } = this
+
+      let ccp = {
+        x: bezierLinePoints.ccpx,
+        y: bezierLinePoints.ccpy
+      }
+      let lcp = {
+        x: bezierLinePoints.lcpx,
+        y: bezierLinePoints.lcpy
+      }
+
+      let scale = canvasWH.width
+      let minusH = (canvasWH.height - canvasWH.width) / 2
+
+      ccp.x = ccp.x * scale
+      ccp.y = ccp.y * scale + minusH
+      lcp.x = lcp.x * scale
+      lcp.y = lcp.y * scale + minusH
+
+      ccp = this.tranPointsPos(ccp)
+      lcp = this.tranPointsPos(lcp)
+
+      begin.ccp = ccp
+      end.lcp = lcp
+
+      this.drawSpeedTimeLine()
+
+      if (bezierLineT) this.drawLineTK()
+    },
+    // 绘制贝塞尔曲线t时刻的K线
+    drawLineTK () {
+      let { begin, end, bezierLineT, canvasWH, blueColor, redColor } = this
+
+      this.drawSpeedTimeLine()
+
+      let pOne = this.getBezierTimePoint(begin, end, bezierLineT)
+      let pTwo = this.getBezierTimePoint(begin, end, bezierLineT - 0.00001)
+
+      // 绘制切线点
+      this.drawPoints(pOne, 4, blueColor)
+
+      let rayPointOne = this.getTwoPointsLineXpos(pOne, pTwo, 0)
+      let rayPointTwo = this.getTwoPointsLineXpos(pOne, pTwo, canvasWH.height)
+
+      // 绘制切线
+      this.drawLine(rayPointOne, rayPointTwo, 2, redColor)
+
+      // 求k
+      this.bezierLineK = ((pTwo.y - pOne.y) / (pTwo.x - pOne.x)).toFixed(3) * -1
+    },
+    // *************************************************
+    // 计算K值
+    calcBezierTK (ccp, lcp, t) {
       let begin = {
         mp: {
           x: 0,
           y: 0
         },
-        ccp: this.ccp
+        ccp
       }
       let end = {
         mp: {
-          x: 1000,
-          y: 1000
+          x: 1,
+          y: 1
         },
-        lcp: this.lcp
+        lcp
       }
 
-      let pOne = this.getBezierTimePoint(begin, end, 0.5)
-      let pTwo = this.getBezierTimePoint(begin, end, 0.49999)
-      this.drawPoints(pOne, 4, '#fed368')
+      let pOne = this.getBezierTimePoint(begin, end, t)
+      let pTwo = this.getBezierTimePoint(begin, end, t - 0.00001)
 
-      let rayPointOne = this.getTwoPointsLineXpos(pOne, pTwo, 0)
-      let rayPointTwo = this.getTwoPointsLineXpos(pOne, pTwo, 1000)
+      return ((pTwo.y - pOne.y) / (pTwo.x - pOne.x)).toFixed(3)
+    },
+    // 播放动画
+    playBezierSpeedAnimation (pOne, pTwo, value, toValue, t, callback, roundNum = 1, curValue = false) {
+      if (!this.animationStatus) return false
 
-      this.drawLine(rayPointOne, rayPointTwo, 2, '#c03264')
+      let { frameTime } = this
 
-      this.drawPoints(begin.ccp, 30)
+      let drawNum = t * 1000 / frameTime
+
+      let changeArea = toValue - value
+
+      let avgSpeed = changeArea / drawNum
+
+      let curTime = roundNum / drawNum
+
+      let curKV = this.calcBezierTK(pOne, pTwo, curTime) * avgSpeed
+
+      console.log(curKV)
+
+      if (!curValue) curValue = value
+
+      curValue += curKV
+
+      if (typeof (callback) === 'function') callback(curValue)
+
+      if (roundNum === drawNum) {
+        this.animationStatus = true
+        console.error(curValue)
+        return false
+      }
+
+      roundNum++
+
+      let vm = this
+
+      setTimeout(() => {
+        vm.playBezierSpeedAnimation(pOne, pTwo, value, toValue, t, callback, roundNum, curValue)
+      }, frameTime)
+    },
+    // 移动方块
+    moveBox () {
+      let { lineSpeedBox, speedItem, bezierLinePoints, itemData, animationTime } = this
+
+      itemData.left = 10
+      speedItem.style.left = '10px'
+
+      let endPos = lineSpeedBox.clientWidth - 60
+
+      let pOne = {
+        x: bezierLinePoints.ccpx,
+        y: bezierLinePoints.ccpy
+      }
+      let pTwo = {
+        x: bezierLinePoints.lcpx,
+        y: bezierLinePoints.lcpy
+      }
+
+      this.playBezierSpeedAnimation(pOne, pTwo, itemData.left, endPos, animationTime, this.play)
+    },
+    // 移动方块位置
+    play (value) {
+      let { itemData, speedItem } = this
+
+      itemData.left = value
+
+      speedItem.style.left = value + 'px'
     }
+  },
+  created () {
   },
   mounted () {
     let vm = this
 
-    let canvas = document.querySelector('#test')
+    let lineSpeedBox = document.querySelector('.line-speed')
+
+    let speedItem = document.querySelector('#speed-item')
+
+    let canvas = document.querySelector('#bezier-speed-line')
     let ctx = canvas.getContext('2d')
+
+    vm.lineSpeedBox = lineSpeedBox
+    vm.speedItem = speedItem
 
     vm.canvas = canvas
     vm.ctx = ctx
@@ -287,6 +478,8 @@ export default {
 
     vm.initPointsPos()
 
+    vm.tranShowPointsData()
+
     vm.drawSpeedTimeLine()
 
     canvas.addEventListener('mousedown', vm.mouseDown)
@@ -297,14 +490,69 @@ export default {
 
 <style lang="less">
   #test-container {
+    display: flex;
     width: 100%;
-    height: 100%;
+    height: calc(~"100% - 70px");
+    flex-flow: row nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
     canvas {
       width: 300px;
-      height: calc(~"100% - 80px");
       box-shadow: 0 0 3px gray;
       margin-left: 30px;
-      margin-top: 5px;
+    }
+    .line-perform {
+      box-shadow: 0 0 3px gray;
+      flex-grow: 1;
+      margin-left: 30px;
+      display: flex;
+      flex-direction: column;
+      .line-info, .k-value, .animation-time {
+        height: 50px;
+        box-shadow: 0 0 3px gray;
+        line-height: 50px;
+        text-indent: 10px;
+        font-size: 30px;
+        color: #f06183;
+        input {
+          width: 50px;
+          height: 30px;
+          vertical-align: center;
+          text-align: center;
+          line-height: 30px;
+          font-size: 20px;
+        }
+      }
+      .k-value, .animation-time, .line-speed {
+        margin-top: 10px;
+      }
+      .animation-time {
+        span {
+          display: inline-block;
+          box-shadow: 0 0 3px #69d2cd;
+          color: #69d2cd;
+          cursor: pointer;
+          text-indent: 0px;
+          padding: 0px 10px;
+          transition: all 0.3s;
+          &:hover {
+            color: #f06183;
+          }
+        }
+      }
+      .line-speed {
+        position: relative;
+        flex: 1;
+        box-shadow: 0 0 3px gray;
+        div {
+          position: absolute;
+          background-color: #f06183;
+          width: 50px;
+          height: 50px;
+          left: 10px;
+          top: 100px;
+        }
+      }
     }
   }
 </style>
