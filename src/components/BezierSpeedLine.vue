@@ -96,7 +96,7 @@ export default {
       // 是否可以播放动画
       animationStatus: true,
       // 每一帧的时间 ms
-      frameTime: 15
+      frameTime: 10
     }
   },
   methods: {
@@ -378,32 +378,43 @@ export default {
       return ((pTwo.y - pOne.y) / (pTwo.x - pOne.x)).toFixed(3)
     },
     // 播放动画
-    playBezierSpeedAnimation (pOne, pTwo, value, toValue, t, callback, roundNum = 1, curValue = false) {
-      if (!this.animationStatus) return false
-
+    playBezierSpeedAnimation (pOne, pTwo, value, toValue, t, callback, roundNum = 1) {
+      // 每帧绘制时间间隔
       let { frameTime } = this
 
-      let drawNum = t * 1000 / frameTime
+      // 绘制完成一共需要多少帧
+      let drawNum = Math.ceil(t * 1000 / frameTime)
 
+      // 变化总值
       let changeArea = toValue - value
 
-      let avgSpeed = changeArea / drawNum
-
+      // 当前t值
       let curTime = roundNum / drawNum
 
-      let curKV = this.calcBezierTK(pOne, pTwo, curTime) * avgSpeed
+      let pointOne = {
+        mp: {
+          x: 0,
+          y: 0
+        },
+        ccp: pOne
+      }
 
-      console.log(curKV)
+      let pointTwo = {
+        mp: {
+          x: 1,
+          y: 1
+        },
+        lcp: pTwo
+      }
+      // 当前t曲线上的点
+      let curBezierLinePoint = this.getBezierTimePoint(pointOne, pointTwo, curTime)
 
-      if (!curValue) curValue = value
-
-      curValue += curKV
+      let curValue = (changeArea * curBezierLinePoint.y) + value
 
       if (typeof (callback) === 'function') callback(curValue)
 
       if (roundNum === drawNum) {
         this.animationStatus = true
-        console.error(curValue)
         return false
       }
 
@@ -417,12 +428,16 @@ export default {
     },
     // 移动方块
     moveBox () {
-      let { lineSpeedBox, speedItem, bezierLinePoints, itemData, animationTime } = this
+      let { lineSpeedBox, speedItem, bezierLinePoints, itemData, animationTime, animationStatus } = this
+
+      if (!animationStatus) return false
+
+      this.animationStatus = false
 
       itemData.left = 10
       speedItem.style.left = '10px'
 
-      let endPos = lineSpeedBox.clientWidth - 60
+      let endPos = lineSpeedBox.clientWidth - 65
 
       let pOne = {
         x: bezierLinePoints.ccpx,
