@@ -3,7 +3,8 @@ import Router from 'vue-router'
 
 import hi from '../components/hi.vue'
 
-import BezierSpeedLine from '../components/BezierSpeedLine.vue'
+import bezierSpeedLine from '../components/bezierSpeedLine.vue'
+import drawBezierCurve from '../components/drawBezierCurve.vue'
 
 Vue.use(Router)
 
@@ -21,9 +22,14 @@ export default new Router({
       component: hi
     },
     {
-      path: '/BezierSpeedLine',
-      name: 'BezierSpeedLine',
-      component: BezierSpeedLine
+      path: '/bezierSpeedLine',
+      name: 'bezierSpeedLine',
+      component: bezierSpeedLine
+    },
+    {
+      path: '/drawBezierCurve',
+      name: 'drawBezierCurve',
+      component: drawBezierCurve
     }
   ]
 })
