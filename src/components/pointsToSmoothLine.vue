@@ -1,6 +1,6 @@
 <template>
   <div id="points-to-smooth-line">
-    points-to-smooth-line
+    <canvas id="points-to-smooth-line"></canvas>
   </div>
 </template>
 

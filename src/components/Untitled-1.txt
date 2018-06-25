@@ -1,0 +1,87 @@
+    animation (param) {
+      let { duration, currentCycleNum, frameTime, beginValue, endValue } = param
+
+      // 绘制完成一共需要多少帧
+      let allCycleNum = Math.ceil(duration * 1000 / frameTime)
+
+      // 变化总值
+      let changeArea = beginValue - endValue
+
+      // 当前t值
+      let curTime = currentCycleNum / allCycleNum
+
+      let { pointOne, pointTwo } = param
+
+      // 当前t曲线上的点
+      let curBezierLinePoint = this.getBezierTimePoint(pointOne, pointTwo, curTime)
+
+      let curValue = (changeArea * curBezierLinePoint.y) + beginValue
+
+      param.currentValue = curValue
+
+      let { beginFun, endFun, cycleFun } = this
+
+      if (currentCycleNum === 1 && typeof beginFun === 'function') beginFun(param)
+
+      if (typeof cycleFun === 'function') cycleFun(param)
+
+      if (roundNum === drawNum) {
+        if (typeof endFun === 'function') endFun(param)
+
+        param.status = false
+
+        return false
+      }
+
+      param.currentCycleNum++
+
+      let vm = this
+
+      setTimeout(() => {
+        vm.animation(param)
+      }, frameTime)
+    },
+    prepareAnimation (param) {
+      let defaultParam = {
+        bezierSpeedLine: {
+          pointOne: {
+            mp: {
+              x: 0,
+              y: 0
+            },
+            ccp: {
+              x: 0,
+              y: 0
+            }
+          },
+          pointTwo: {
+            mp: {
+              x: 1,
+              y: 1
+            },
+            lcp: {
+              x: 1,
+              y: 1
+            }
+          }
+        },
+        beginValue: 0,
+        endValue: 0,
+        duration: 0,
+        frameTime: 0,
+        cycleFun: null,
+        beginFun: null,
+        endFun: null
+      }
+
+      let startParam = {
+        currentCycleNum: 1,
+        durationPercent: 0,
+        currentValue: 0,
+        status: true
+      }
+
+      Object.assign(defaultParam, param, startParam)
+
+      this.animation(defaultParam)
+    },
