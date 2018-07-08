@@ -27,26 +27,27 @@ export default {
     }
   },
   methods: {
+    /**
+     * @description         初始化canvas及必要数据
+     * @return  {undefined} 无返回值
+     */
+    initData () {
+      const { canvasWH } = this
 
+      this.canvas = document.querySelector('#points-to-smooth-line-canvas')
+      this.ctx = this.canvas.getContext('2d')
+
+      // 获取canvasDOM宽高 并放大两倍 减少画面模糊
+      canvasWH.width = this.canvas.clientWidth * 2
+      canvasWH.height = this.canvas.clientHeight * 2
+
+      // 设置canvas绘制区域大小
+      this.canvas.setAttribute('width', canvasWH.width)
+      this.canvas.setAttribute('height', canvasWH.height)
+    }
   },
-  created () {
-
-    let lineSpeedBox = document.querySelector('.line-speed')
-
-    let speedItem = document.querySelector('#speed-item')
-
-    let canvas = document.querySelector('#bezier-speed-line')
-    let ctx = canvas.getContext('2d')
-
-    vm.lineSpeedBox = lineSpeedBox
-    vm.speedItem = speedItem
-
-    vm.canvas = canvas
-    vm.ctx = ctx
-
-    // 获取canvasDOM宽高 并放大两倍 减少画面模糊
-    let width = canvas.clientWidth * 2
-    let height = canvas.clientHeight * 2
+  mounted () {
+    this.initData()
   }
 }
 </script>
