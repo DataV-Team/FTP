@@ -47,7 +47,14 @@ export default {
         beelinesColor: '#00a1e4',
         // 曲线颜色
         curvesColor: '#69d2cd'
-      }
+      },
+
+      // 配置项
+
+      // 球点半径
+      pointsRadius: 15,
+      // 线条宽度
+      lineWidth: 3
     }
   },
   methods: {
@@ -76,7 +83,7 @@ export default {
     handleMouseDown ({ offsetX, offsetY }) {
       const { drawData, draw } = this
 
-      drawData.push({offsetX, offsetY})
+      drawData.push({x: offsetX * 2, y: offsetY * 2})
 
       draw()
     },
@@ -87,8 +94,57 @@ export default {
     draw () {
       const { drawPoints, drawBeelines, drawCurveLines } = this
 
+      drawPoints()
 
+      drawBeelines()
 
+      drawCurveLines()
+    },
+    /**
+     * @description         绘制 绘制点
+     * @return  {undefined} 无返回值
+     */
+    drawPoints () {
+      const { drawData, drawPoint, pointsRadius, color: { pointsColor } } = this
+
+      drawData.map(({ x, y }) => {
+        const point = { x, y, radius: pointsRadius, color: pointsColor }
+
+        drawPoint(point)
+      })
+    },
+    /**
+     * @description         绘制原点
+     * @param   {Object}    绘制点的信息
+     * @param           {x, y}   绘制球点坐标位置
+     * @param           {radius} 球点半径
+     * @param           {color}  球点颜色
+     * @return  {undefined} 无返回值
+     */
+    drawPoint ({x = 0, y = 0, radius = 10, color = '#000'}) {
+      const { ctx } = this
+
+      console.error(radius)
+
+      ctx.beginPath()
+      ctx.arc(x, y, radius, 0, Math.PI * 2)
+      ctx.closePath()
+
+      ctx.fillStyle = color
+      ctx.strokeStyle = color
+      ctx.fill()
+      ctx.stroke()
+    },
+    /**
+     * @description         绘制 点连线
+     * @return  {undefined} 无返回值
+     */
+    drawBeelines () {
+      const { drawData, drawBeeline, lineWidth } = this
+
+      drawData.map((point , index) => {
+
+      })
     }
   },
   mounted () {
