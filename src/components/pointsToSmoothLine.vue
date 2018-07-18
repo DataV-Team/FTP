@@ -7,7 +7,9 @@
         <input type="text" placeholder="K">
       </div>
     </div>
-    <canvas id="points-to-smooth-line-canvas"></canvas>
+    <canvas
+      id="points-to-smooth-line-canvas"
+      @mousedown="handleMouseDown"/>
   </div>
 </template>
 
@@ -23,6 +25,28 @@ export default {
       canvasWH: {
         width: 0,
         height: 0
+      },
+      // 绘制数据
+      drawData: [],
+      // 曲线是否闭合
+      lineClosedStatus: false,
+      // 增强
+      enhance: {
+        // 绘制点的显示状态
+        pointsStatus: true,
+        // 直线的显示状态
+        beelinesStatus: true,
+        // 曲线的显示状态
+        curvesStatus: true
+      },
+      // 颜色
+      color: {
+        // 绘制点颜色
+        pointsColor: '#f06183',
+        // 直线颜色
+        beelinesColor: '#00a1e4',
+        // 曲线颜色
+        curvesColor: '#69d2cd'
       }
     }
   },
@@ -44,6 +68,27 @@ export default {
       // 设置canvas绘制区域大小
       this.canvas.setAttribute('width', canvasWH.width)
       this.canvas.setAttribute('height', canvasWH.height)
+    },
+    /**
+     * @description         初始化canvas及必要数据
+     * @return  {undefined} 无返回值
+     */
+    handleMouseDown ({ offsetX, offsetY }) {
+      const { drawData, draw } = this
+
+      drawData.push({offsetX, offsetY})
+
+      draw()
+    },
+    /**
+     * @description         绘制曲线
+     * @return  {undefined} 无返回值
+     */
+    draw () {
+      const { drawPoints, drawBeelines, drawCurveLines } = this
+
+
+
     }
   },
   mounted () {
