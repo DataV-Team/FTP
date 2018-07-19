@@ -81,11 +81,52 @@ export default {
      * @return  {undefined} 无返回值
      */
     handleMouseDown ({ offsetX, offsetY }) {
-      const { drawData, draw } = this
+      const { lineClosedStatus, drawData, draw } = this
 
-      drawData.push({x: offsetX * 2, y: offsetY * 2})
+      if (lineClosedStatus) return false
+
+      const { x, y } = { x: offsetX * 2, y: offsetY * 2 }
+
+      const { calcPointIsInCircle, pointsRadius } = this
+
+      drawData.push({ x, y })
+
+      drawData.length > 2 &&
+        calcPointIsInCircle(drawData[0], { x, y, radius: pointsRadius }) &&
+        drawData.splice(drawData.length - 1, 1) &&
+        (this.lineClosedStatus = true)
 
       draw()
+    },
+    /**
+     * @description        计算点是否在圆内
+     * @return  {Boolean}  计算结果 在圆内 为 true 否则 false
+     */
+    calcPointIsInCircle (point, circle) {
+      const { calcTwoPointsDistance } = this
+
+      const { radius } = circle
+
+      const distance = calcTwoPointsDistance(point, circle)
+
+      return distance < radius
+    },
+    /**
+     * @description         计算两点间距离
+     * @param   {Object}    起始 终止 点数据
+     * @param           {x, y}   球点坐标位置
+     * @return  {int}       两点间距离
+     */
+    calcTwoPointsDistance (pointBeing, pointEnd) {
+      const { sqrt, pow, abs } = Math
+
+      const { x: bx, y: by } = pointBeing
+      const { x: ex, y: ey } = pointEnd
+
+      const absX = abs(bx - ex)
+      const absY = abs(by - ey)
+
+      return sqrt(pow(absX, 2) + pow(absY, 2))
     },
     /**
      * @description         绘制曲线
