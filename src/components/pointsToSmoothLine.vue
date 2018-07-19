@@ -142,10 +142,35 @@ export default {
     drawBeelines () {
       const { drawData, drawBeeline, lineWidth } = this
 
-      drawData.map((point , index) => {
+      drawData.map((point, index) => {
 
       })
+    },
+    /**
+     * @description         绘制 点连线
+     * @param   {Object}    起始 终止 点数据
+     * @param           {x, y}   绘制球点坐标位置
+     * @param   {Int}       线条宽度
+     * @param   {String}    线条颜色
+     * @return  {undefined} 无返回值
+     */
+    drawCurveLine (lineBegin, lineEnd, lineWidth = 3, lineColor = '#000') {
+      const { ctx } = this
+
+      ctx.beginPath()
+
+      let { x, y } = lineBegin
+
+      ctx.moveTo(x, y)
+
+
+
+      ctx.closePath()
+
+
     }
+
+
   },
   mounted () {
     this.initData()
