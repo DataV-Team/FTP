@@ -1,7 +1,7 @@
 <template>
   <div id="points-to-smooth-line">
     <div class="action">
-      <div @click="reDraw">reDraw</div>
+      <div class="red" @click="reDraw">reDraw</div>
       <input type="text" placeholder="K">
       <div :class="{red: enhance.pointsStatus}"
         @click="changeDrawStatus('pointsStatus')">Points</div>
@@ -232,7 +232,18 @@ export default {
       ctx.strokeStyle = lineColor
       ctx.stroke()
     },
+    /**
+     * @description          绘制曲线
+     * @return  {undefined}  无返回值
+     */
     drawCurveLines () {
+    },
+    /**
+     * @description          绘制贝塞尔曲线
+     * @return  {undefined}  无返回值
+     */
+    drawCurveLine () {
+
     },
     /**
      * @description          重新绘制
@@ -281,7 +292,6 @@ export default {
     margin-bottom: 10px;
     height: 50px;
     font-size: 20px;
-    box-shadow: 0 0 3px red;
     display: flex;
     flex-direction: row;
     justify-content: space-around;
@@ -291,6 +301,11 @@ export default {
       width: 100px;
       text-align: center;
       box-shadow: 0 0 3px gray;
+      transition: all 0.3s;
+
+      &:hover {
+        box-shadow: 0 0 3px #f06183;
+      }
     }
 
     div {
