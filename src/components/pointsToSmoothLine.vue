@@ -124,8 +124,6 @@ export default {
     drawPoint ({x = 0, y = 0, radius = 10, color = '#000'}) {
       const { ctx } = this
 
-      console.error(radius)
-
       ctx.beginPath()
       ctx.arc(x, y, radius, 0, Math.PI * 2)
       ctx.closePath()
@@ -140,11 +138,24 @@ export default {
      * @return  {undefined} 无返回值
      */
     drawBeelines () {
-      const { drawData, drawBeeline, lineWidth } = this
+      const { drawData, drawBeeline } = this
+
+      const { lineWidth, color: { beelinesColor } } = this
+
+      const { length: pointsNum } = drawData
 
       drawData.map((point, index) => {
+        if (index === pointsNum - 1) return false
 
+        const lineBegin = point
+        const lineEnd = drawData[index + 1]
+
+        drawBeeline(lineBegin, lineEnd, lineWidth, beelinesColor)
       })
+
+      const { lineClosedStatus } = this
+
+      lineClosedStatus && drawBeeline(drawData[pointsNum - 1], drawData[0], lineWidth, beelinesColor)
     },
     /**
      * @description         绘制 点连线
@@ -154,23 +165,29 @@ export default {
      * @param   {String}    线条颜色
      * @return  {undefined} 无返回值
      */
-    drawCurveLine (lineBegin, lineEnd, lineWidth = 3, lineColor = '#000') {
+    drawBeeline (lineBegin, lineEnd, lineWidth = 3, lineColor = '#000') {
       const { ctx } = this
 
       ctx.beginPath()
 
-      let { x, y } = lineBegin
+      {
+        const { x, y } = lineBegin
+        ctx.moveTo(x, y)
+      }
 
-      ctx.moveTo(x, y)
-
-
+      {
+        const { x, y } = lineEnd
+        ctx.lineTo(x, y)
+      }
 
       ctx.closePath()
 
-
+      ctx.lineWidth = lineWidth
+      ctx.strokeStyle = lineColor
+      ctx.stroke()
+    },
+    drawCurveLines () {
     }
-
-
   },
   mounted () {
     this.initData()
