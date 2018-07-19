@@ -1,11 +1,12 @@
 <template>
   <div id="points-to-smooth-line">
     <div class="action">
-      <div class="re-paint">RePaint</div>
-      <div class="k-value">
-        k:
-        <input type="text" placeholder="K">
-      </div>
+      <div @click="reDraw">reDraw</div>
+      <input type="text" placeholder="K">
+      <div :class="{red: enhance.pointsStatus}"
+        @click="changeDrawStatus('pointsStatus')">Points</div>
+      <div :class="{red: enhance.beelinesStatus}"
+        @click="changeDrawStatus('beelinesStatus')">beeline</div>
     </div>
     <canvas
       id="points-to-smooth-line-canvas"
@@ -77,7 +78,7 @@ export default {
       this.canvas.setAttribute('height', canvasWH.height)
     },
     /**
-     * @description         初始化canvas及必要数据
+     * @description         处理鼠标点下事件
      * @return  {undefined} 无返回值
      */
     handleMouseDown ({ offsetX, offsetY }) {
@@ -133,13 +134,17 @@ export default {
      * @return  {undefined} 无返回值
      */
     draw () {
-      const { drawPoints, drawBeelines, drawCurveLines } = this
+      const { ctx, canvasWH, drawPoints, drawBeelines, drawCurveLines, enhance } = this
 
-      drawPoints()
+      ctx.clearRect(0, 0, canvasWH.width, canvasWH.height)
 
-      drawBeelines()
+      const { pointsStatus, beelinesStatus, curvesStatus } = enhance
 
-      drawCurveLines()
+      pointsStatus && drawPoints()
+
+      beelinesStatus && drawBeelines()
+
+      curvesStatus && drawCurveLines()
     },
     /**
      * @description         绘制 绘制点
@@ -228,6 +233,31 @@ export default {
       ctx.stroke()
     },
     drawCurveLines () {
+    },
+    /**
+     * @description          重新绘制
+     * @return  {undefined}  无返回值
+     */
+    reDraw () {
+      const { draw } = this
+
+      this.drawData = []
+
+      this.lineClosedStatus = false
+
+      draw()
+    },
+    /**
+     * @description          切换绘制元素显示与隐藏状态
+     * @param   {string}     切换的元素状态键值
+     * @return  {undefined}  无返回值
+     */
+    changeDrawStatus (key) {
+      const { enhance, draw } = this
+
+      enhance[key] = !enhance[key]
+
+      draw()
     }
   },
   mounted () {
@@ -241,36 +271,37 @@ export default {
   width: 100%;
   height: calc(~"100% - 70px");
 
+  .red {
+    color: #f06183;
+  }
+
   .action {
-    margin: auto;
+    width: 100%;
     margin-top: 10px;
     margin-bottom: 10px;
-    width: 260px;
     height: 50px;
     font-size: 20px;
+    box-shadow: 0 0 3px red;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    line-height: 50px;
 
-    .re-paint {
-      float: left;
-      width: 80px;
-      height: 50px;
-      box-shadow: 0 0 3px gray;
+    & > div, & > input {
+      width: 100px;
       text-align: center;
-      line-height: 50px;
+      box-shadow: 0 0 3px gray;
+    }
+
+    div {
       cursor: pointer;
     }
 
-    .k-value {
-      float: left;
-      margin-left: 100px;
-      line-height: 50px;
+    input {
+      border: 0px;
 
-      input {
-        display: block;
-        float: right;
-        box-sizing: border-box;
-        width: 50px;
-        height: 50px;
-        text-align: center;
+      &::-webkit-input-placeholder {
+        font-size: 20px;
       }
     }
   }
