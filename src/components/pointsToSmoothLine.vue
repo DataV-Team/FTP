@@ -38,15 +38,19 @@ export default {
         // 直线的显示状态
         beelinesStatus: true,
         // 曲线的显示状态
-        curvesStatus: true
+        curvesStatus: true,
+        // 绘制点中点的显示状态
+        linesMiddlePointsStatus: true
       },
       // 颜色
       color: {
-        // 绘制点颜色
+        // 绘制点颜色 红色
         pointsColor: '#f06183',
-        // 直线颜色
+        // 直线颜色 蓝色
         beelinesColor: '#00a1e4',
-        // 曲线颜色
+        // 曲线颜色 绿色
+        linesMiddlePointsColor: '#69d2cd',
+        // 曲线颜色 绿色
         curvesColor: '#69d2cd'
       },
 
@@ -54,6 +58,8 @@ export default {
 
       // 球点半径
       pointsRadius: 15,
+      // 中点球点半径
+      middlePointsRadius: 7,
       // 线条宽度
       lineWidth: 3
     }
@@ -145,6 +151,12 @@ export default {
       beelinesStatus && drawBeelines()
 
       curvesStatus && drawCurveLines()
+
+      const { drawLinesMiddlePoints } = this
+
+      const { linesMiddlePointsStatus } = enhance
+
+      linesMiddlePointsStatus && drawLinesMiddlePoints()
     },
     /**
      * @description         绘制 绘制点
@@ -233,6 +245,47 @@ export default {
       ctx.stroke()
     },
     /**
+     * @description          绘制连线中点 点标记
+     * @return  {undefined}  无返回值
+     */
+    drawLinesMiddlePoints () {
+      const { drawData, drawLineMiddlePoint, lineClosedStatus } = this
+
+      // const { middlePointsRadius, color: { linesMiddlePointsColor } } = this
+
+      const { length: pointsNum } = drawData
+
+      drawData.map((point, index) => {
+        if (index === pointsNum - 1) return false
+
+        const lineBegin = point
+        const lineEnd = drawData[index + 1]
+
+        drawLineMiddlePoint(lineBegin, lineEnd)
+      })
+
+      lineClosedStatus && drawLineMiddlePoint(drawData[pointsNum - 1], drawData[0])
+    },
+    /**
+     * @description          绘制连线中点 点标记
+     * @return  {undefined}  无返回值
+     */
+    drawLineMiddlePoint (lineBegin, lineEnd) {
+      const { x: bx, y: by } = lineBegin
+      const { x: ex, y: ey } = lineEnd
+
+      const { drawPoint, middlePointsRadius, color: { linesMiddlePointsColor } } = this
+
+      const point = {
+        x: (bx + ex) / 2,
+        y: (by + ey) / 2,
+        radius: middlePointsRadius,
+        color: linesMiddlePointsColor
+      }
+
+      drawPoint(point)
+    },
+    /**
      * @description          绘制曲线
      * @return  {undefined}  无返回值
      */
@@ -243,7 +296,6 @@ export default {
      * @return  {undefined}  无返回值
      */
     drawCurveLine () {
-
     },
     /**
      * @description          重新绘制
