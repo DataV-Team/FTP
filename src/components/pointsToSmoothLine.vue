@@ -9,6 +9,8 @@
         @click="changeDrawStatus('beelinesStatus')">beeline</div>
       <div :class="{red: enhance.linesMiddlePointsStatus}"
         @click="changeDrawStatus('linesMiddlePointsStatus')">LMP</div>
+      <div :class="{red: enhance.middlePointsLinesStatus}"
+        @click="changeDrawStatus('middlePointsLinesStatus')">MPL</div>
     </div>
     <canvas
       id="points-to-smooth-line-canvas"
@@ -52,8 +54,10 @@ export default {
         pointsColor: '#f06183',
         // 直线颜色 蓝色
         beelinesColor: '#00a1e4',
-        // 曲线颜色 绿色
+        // 绘制点连线中点颜色 绿色
         linesMiddlePointsColor: '#69d2cd',
+        // 绘制点连线中点连线颜色 黄色
+        middlePointsLinesColor: '#fed368',
         // 曲线颜色 绿色
         curvesColor: '#69d2cd'
       },
@@ -70,8 +74,8 @@ export default {
   },
   methods: {
     /**
-     * @description         初始化canvas及必要数据
-     * @return  {undefined} 无返回值
+     * @description             初始化canvas及必要数据
+     * @return     {undefined}  无返回值
      */
     initData () {
       const { canvasWH } = this
@@ -88,8 +92,9 @@ export default {
       this.canvas.setAttribute('height', canvasWH.height)
     },
     /**
-     * @description         处理鼠标点下事件
-     * @return  {undefined} 无返回值
+     * @description                      处理鼠标点下事件
+     * @param      {{offsetX, offsetY}}  点击事件的坐标 {Object}
+     * @return     {undefined}           无返回值
      */
     handleMouseDown ({ offsetX, offsetY }) {
       const { lineClosedStatus, drawData, draw } = this
@@ -102,16 +107,20 @@ export default {
 
       drawData.push({ x, y })
 
-      drawData.length > 2 &&
+      const { length: pointsNum } = drawData
+
+      pointsNum > 2 &&
         calcPointIsInCircle(drawData[0], { x, y, radius: pointsRadius }) &&
-        drawData.splice(drawData.length - 1, 1) &&
+        drawData.splice(pointsNum - 1, 1) &&
         (this.lineClosedStatus = true)
 
       draw()
     },
     /**
-     * @description        计算点是否在圆内
-     * @return  {Boolean}  计算结果 在圆内 为 true 否则 false
+     * @description                  计算点是否在圆内
+     * @param      {{x, y}}          点击点位置 {Object}
+     * @param      {{x, y, radius}}  圆的圆心位置与半径 {Object}
+     * @return     {Boolean}         计算结果 在圆内 为 true 否则 false
      */
     calcPointIsInCircle (point, circle) {
       const { calcTwoPointsDistance } = this
@@ -123,16 +132,13 @@ export default {
       return distance < radius
     },
     /**
-     * @description         计算两点间距离
-     * @param   {Object}    起始 终止 点数据
-     * @param           {x, y}   球点坐标位置
-     * @return  {int}       两点间距离
+     * @description          计算两点间距离
+     * @param      {{x, y}}  起始球点坐标位置
+     * @param      {{x, y}}  终止球点坐标位置
+     * @return     {int}     两点间距离
      */
-    calcTwoPointsDistance (pointBeing, pointEnd) {
+    calcTwoPointsDistance ({x: bx, y: by}, {x: ex, y: ey}) {
       const { sqrt, pow, abs } = Math
-
-      const { x: bx, y: by } = pointBeing
-      const { x: ex, y: ey } = pointEnd
 
       const absX = abs(bx - ex)
       const absY = abs(by - ey)
@@ -140,50 +146,65 @@ export default {
       return sqrt(pow(absX, 2) + pow(absY, 2))
     },
     /**
-     * @description         绘制曲线
-     * @return  {undefined} 无返回值
+     * @description            绘制曲线
+     * @return     {undefined} 无返回值
      */
     draw () {
-      const { ctx, canvasWH, drawPoints, drawBeelines, drawCurveLines, enhance } = this
+      // 方法
+      const { drawPoints, drawBeelines, drawCurveLines } = this
 
+      // 参数
+      const { ctx, canvasWH, enhance, drawData, lineClosedStatus } = this
+
+      // 擦除画布
       ctx.clearRect(0, 0, canvasWH.width, canvasWH.height)
 
+      // 获取增强元素状态
       const { pointsStatus, beelinesStatus, curvesStatus } = enhance
 
-      pointsStatus && drawPoints()
+      // 绘制 绘制点
+      pointsStatus && drawPoints(drawData)
 
-      beelinesStatus && drawBeelines()
+      // 绘制 绘制点连线
+      beelinesStatus && drawBeelines(drawData, lineClosedStatus)
 
-      curvesStatus && drawCurveLines()
+      // 绘制 绘制点平滑线
+      curvesStatus && drawCurveLines(drawData, lineClosedStatus)
 
+      // 方法
       const { drawLinesMiddlePoints, drawMiddlePointsLines } = this
 
+      // 获取增强元素状态
       const { linesMiddlePointsStatus, middlePointsLinesStatus } = enhance
 
-      linesMiddlePointsStatus && drawLinesMiddlePoints()
+      // 绘制 绘制点连线中点
+      linesMiddlePointsStatus && drawLinesMiddlePoints(drawData, lineClosedStatus)
 
-      middlePointsLinesStatus && drawMiddlePointsLines()
+      // 绘制 绘制点连线中点连线
+      middlePointsLinesStatus && drawMiddlePointsLines(drawData, lineClosedStatus)
     },
     /**
-     * @description         绘制 绘制点
-     * @return  {undefined} 无返回值
+     * @description                 绘制 绘制点
+     * @param      {[{x, y}, ...]}  点数据集 每个元素都是包涵点坐标的对象 {Array}
+     * @return     {undefined}      无返回值
      */
-    drawPoints () {
-      const { drawData, drawPoint, pointsRadius, color: { pointsColor } } = this
+    drawPoints (points) {
+      // 方法
+      const { drawPoint } = this
 
-      drawData.map(({ x, y }) => {
+      // 参数
+      const { pointsRadius, color: { pointsColor } } = this
+
+      points.map(({ x, y }) => {
         const point = { x, y, radius: pointsRadius, color: pointsColor }
 
         drawPoint(point)
       })
     },
     /**
-     * @description         绘制原点
-     * @param   {Object}    绘制点的信息
-     * @param           {x, y}   绘制球点坐标位置
-     * @param           {radius} 球点半径
-     * @param           {color}  球点颜色
-     * @return  {undefined} 无返回值
+     * @description                         绘制原点
+     * @param      {{x, y, radius, color}}  绘制球点坐标 位置 半径 颜色
+     * @return     {undefined}              无返回值
      */
     drawPoint ({x = 0, y = 0, radius = 10, color = '#000'}) {
       const { ctx } = this
@@ -198,51 +219,47 @@ export default {
       ctx.stroke()
     },
     /**
-     * @description         绘制 点连线
-     * @return  {undefined} 无返回值
+     * @description                 绘制 点连线
+     * @param      {[{x, y}, ...]}  绘制点集 {Array} {[Int, Int]} 每个元素都是包涵点坐标的对象
+     * @param      {closed}         线段是否闭合 {Boolean}
+     * @param      {color}          线段颜色 {String}
+     * @return     {undefined}      无返回值
      */
-    drawBeelines () {
-      const { drawData, drawBeeline } = this
+    drawBeelines (points, closed = false, color = false) {
+      // 方法
+      const { drawBeeline } = this
 
+      // 参数
       const { lineWidth, color: { beelinesColor } } = this
 
-      const { length: pointsNum } = drawData
+      const { length: pointsNum } = points
 
-      drawData.map((point, index) => {
+      points.map((point, index) => {
         if (index === pointsNum - 1) return false
 
         const lineBegin = point
-        const lineEnd = drawData[index + 1]
+        const lineEnd = points[index + 1]
 
-        drawBeeline(lineBegin, lineEnd, lineWidth, beelinesColor)
+        drawBeeline(lineBegin, lineEnd, lineWidth, color || beelinesColor)
       })
 
-      const { lineClosedStatus } = this
-
-      lineClosedStatus && drawBeeline(drawData[pointsNum - 1], drawData[0], lineWidth, beelinesColor)
+      closed && drawBeeline(points[pointsNum - 1], points[0], lineWidth, color || beelinesColor)
     },
     /**
-     * @description         绘制 点连线
-     * @param   {Object}    起始 终止 点数据
-     * @param           {x, y}   绘制球点坐标位置
-     * @param   {Int}       线条宽度
-     * @param   {String}    线条颜色
-     * @return  {undefined} 无返回值
+     * @description             绘制 点连线
+     * @param      {{x, y}}     线段起始点 {Object} {{Int, Int}}
+     * @param      {{x, y}}     线段终止点
+     * @param      {lineWidth}  线段宽度 {Int}
+     * @param      {lineColor}  线段颜色 {String}
+     * @return     {undefined}  无返回值
      */
-    drawBeeline (lineBegin, lineEnd, lineWidth = 3, lineColor = '#000') {
+    drawBeeline ({x: bx, y: by}, {x: ex, y: ey}, lineWidth = 3, lineColor = '#000') {
       const { ctx } = this
 
       ctx.beginPath()
 
-      {
-        const { x, y } = lineBegin
-        ctx.moveTo(x, y)
-      }
-
-      {
-        const { x, y } = lineEnd
-        ctx.lineTo(x, y)
-      }
+      ctx.moveTo(bx, by)
+      ctx.lineTo(ex, ey)
 
       ctx.closePath()
 
@@ -251,14 +268,18 @@ export default {
       ctx.stroke()
     },
     /**
-     * @description          绘制连线中点 点标记
-     * @return  {undefined}  无返回值
+     * @description             绘制连线中点 点标记
+     * @param      {[{x, y}]}   绘制点集 {Array} {[{Int, Int}]}
+     * @param      {closed}     中点连线是否闭合 {Boolean}
+     * @return     {undefined}  无返回值
      */
-    drawLinesMiddlePoints () {
+    drawLinesMiddlePoints (points, closed = false) {
+      // 方法
       const { calcLinesMiddlePoints, drawPoint } = this
 
-      const middlePoints = calcLinesMiddlePoints()
+      const middlePoints = calcLinesMiddlePoints(points, closed)
 
+      // 参数
       const { middlePointsRadius: radius, color: { linesMiddlePointsColor: color } } = this
 
       middlePoints.map(point => {
@@ -270,67 +291,75 @@ export default {
       })
     },
     /**
-     * @description        获取线段中点
-     * @return  {Array}    中点数据
+     * @description                 获取线段中点
+     * @param      {[{x, y}, ...]}  绘制点集 {Array} {[{Int, Int}]}
+     * @param      {closed}         中点连线是否闭合 {Boolean}
+     * @return     {[{x, y}, ...]}  中点集 {Array} {[{Int, Int}]}
      */
-    calcLinesMiddlePoints () {
-      const { drawData, lineClosedStatus, calcLineMiddlePoint } = this
+    calcLinesMiddlePoints (points, closed = false) {
+      // 方法
+      const { calcLineMiddlePoint } = this
 
-      const { length: pointsNum } = drawData
+      const { length: pointsNum } = points
 
-      const middlePoints = drawData.map((point, index) => {
+      const middlePoints = points.map((point, index) => {
         if (index === pointsNum - 1) return false
 
         const lineBegin = point
-        const lineEnd = drawData[pointsNum - 1]
+        const lineEnd = points[index + 1]
 
         return calcLineMiddlePoint(lineBegin, lineEnd)
       })
 
       middlePoints.splice(middlePoints.length - 1, 1)
 
-      lineClosedStatus && middlePoints.push(calcLineMiddlePoint(drawData[pointsNum - 1], drawData[0]))
+      closed && middlePoints.push(calcLineMiddlePoint(points[pointsNum - 1], points[0]))
 
       return middlePoints
     },
     /**
-     * @description        获取线段中点
-     * @return  {Object}   中点数据
+     * @description          获取线段中点
+     * @param      {{x. y}}  起始点坐标信息
+     * @param      {{x. y}}  终止点坐标信息
+     * @return     {{x, y}}  中点数据
      */
-    calcLineMiddlePoint (lineBegin, lineEnd) {
-      const { bx, by } = lineBegin
-      const { ex, ey } = lineEnd
-
+    calcLineMiddlePoint ({x: bx, y: by}, {x: ex, y: ey}) {
       return {
         x: (bx + ex) / 2,
         y: (by + ey) / 2
       }
     },
     /**
-     * @description         绘制 绘制点中点连线
-     * @return  {undefined} 无返回值
+     * @description                 绘制 绘制点中点连线
+     * @param      {[{x, y}, ...]}  绘制点集
+     * @param      {closed}         线段图形是否闭合
+     * @return     {undefined}      无返回值
      */
-    drawMiddlePointsLines () {
-      const { drawData, drawBeeline } = this
+    drawMiddlePointsLines (points, closed = false) {
+      // 方法
+      const { drawBeelines, calcLinesMiddlePoints } = this
 
+      const { color: { middlePointsLinesColor } } = this
 
+      const middlePoints = calcLinesMiddlePoints(points, closed)
 
+      drawBeelines(middlePoints, closed, middlePointsLinesColor)
     },
     /**
-     * @description          绘制曲线
-     * @return  {undefined}  无返回值
+     * @description            绘制曲线
+     * @return    {undefined}  无返回值
      */
     drawCurveLines () {
     },
     /**
-     * @description          绘制贝塞尔曲线
-     * @return  {undefined}  无返回值
+     * @description             绘制贝塞尔曲线
+     * @return     {undefined}  无返回值
      */
     drawCurveLine () {
     },
     /**
-     * @description          重新绘制
-     * @return  {undefined}  无返回值
+     * @description             重新绘制
+     * @return     {undefined}  无返回值
      */
     reDraw () {
       const { draw } = this
@@ -342,9 +371,9 @@ export default {
       draw()
     },
     /**
-     * @description          切换绘制元素显示与隐藏状态
-     * @param   {string}     切换的元素状态键值
-     * @return  {undefined}  无返回值
+     * @description             切换绘制元素显示与隐藏状态
+     * @param      {key}        切换的元素状态键值 {String}
+     * @return     {undefined}  无返回值
      */
     changeDrawStatus (key) {
       const { enhance, draw } = this
