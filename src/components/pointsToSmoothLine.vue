@@ -7,6 +7,8 @@
         @click="changeDrawStatus('pointsStatus')">Points</div>
       <div :class="{red: enhance.beelinesStatus}"
         @click="changeDrawStatus('beelinesStatus')">beeline</div>
+      <div :class="{red: enhance.linesMiddlePointsStatus}"
+        @click="changeDrawStatus('linesMiddlePointsStatus')">LMP</div>
     </div>
     <canvas
       id="points-to-smooth-line-canvas"
@@ -40,7 +42,9 @@ export default {
         // 曲线的显示状态
         curvesStatus: true,
         // 绘制点中点的显示状态
-        linesMiddlePointsStatus: true
+        linesMiddlePointsStatus: true,
+        // 绘制点中点连线显示状态
+        middlePointsLinesStatus: true
       },
       // 颜色
       color: {
@@ -152,11 +156,13 @@ export default {
 
       curvesStatus && drawCurveLines()
 
-      const { drawLinesMiddlePoints } = this
+      const { drawLinesMiddlePoints, drawMiddlePointsLines } = this
 
-      const { linesMiddlePointsStatus } = enhance
+      const { linesMiddlePointsStatus, middlePointsLinesStatus } = enhance
 
       linesMiddlePointsStatus && drawLinesMiddlePoints()
+
+      middlePointsLinesStatus && drawMiddlePointsLines()
     },
     /**
      * @description         绘制 绘制点
@@ -249,41 +255,66 @@ export default {
      * @return  {undefined}  无返回值
      */
     drawLinesMiddlePoints () {
-      const { drawData, drawLineMiddlePoint, lineClosedStatus } = this
+      const { calcLinesMiddlePoints, drawPoint } = this
 
-      // const { middlePointsRadius, color: { linesMiddlePointsColor } } = this
+      const middlePoints = calcLinesMiddlePoints()
+
+      const { middlePointsRadius: radius, color: { linesMiddlePointsColor: color } } = this
+
+      middlePoints.map(point => {
+        drawPoint({
+          ...point,
+          radius,
+          color
+        })
+      })
+    },
+    /**
+     * @description        获取线段中点
+     * @return  {Array}    中点数据
+     */
+    calcLinesMiddlePoints () {
+      const { drawData, lineClosedStatus, calcLineMiddlePoint } = this
 
       const { length: pointsNum } = drawData
 
-      drawData.map((point, index) => {
+      const middlePoints = drawData.map((point, index) => {
         if (index === pointsNum - 1) return false
 
         const lineBegin = point
-        const lineEnd = drawData[index + 1]
+        const lineEnd = drawData[pointsNum - 1]
 
-        drawLineMiddlePoint(lineBegin, lineEnd)
+        return calcLineMiddlePoint(lineBegin, lineEnd)
       })
 
-      lineClosedStatus && drawLineMiddlePoint(drawData[pointsNum - 1], drawData[0])
+      middlePoints.splice(middlePoints.length - 1, 1)
+
+      lineClosedStatus && middlePoints.push(calcLineMiddlePoint(drawData[pointsNum - 1], drawData[0]))
+
+      return middlePoints
     },
     /**
-     * @description          绘制连线中点 点标记
-     * @return  {undefined}  无返回值
+     * @description        获取线段中点
+     * @return  {Object}   中点数据
      */
-    drawLineMiddlePoint (lineBegin, lineEnd) {
-      const { x: bx, y: by } = lineBegin
-      const { x: ex, y: ey } = lineEnd
+    calcLineMiddlePoint (lineBegin, lineEnd) {
+      const { bx, by } = lineBegin
+      const { ex, ey } = lineEnd
 
-      const { drawPoint, middlePointsRadius, color: { linesMiddlePointsColor } } = this
-
-      const point = {
+      return {
         x: (bx + ex) / 2,
-        y: (by + ey) / 2,
-        radius: middlePointsRadius,
-        color: linesMiddlePointsColor
+        y: (by + ey) / 2
       }
+    },
+    /**
+     * @description         绘制 绘制点中点连线
+     * @return  {undefined} 无返回值
+     */
+    drawMiddlePointsLines () {
+      const { drawData, drawBeeline } = this
 
-      drawPoint(point)
+
+
     },
     /**
      * @description          绘制曲线
