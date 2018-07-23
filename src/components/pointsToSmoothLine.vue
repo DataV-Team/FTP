@@ -198,6 +198,7 @@ export default {
      * @return     {undefined}      无返回值
      */
     drawPoints (points) {
+      if (!points.length) return false
       // 方法
       const { drawPoint } = this
 
@@ -235,6 +236,7 @@ export default {
      * @return     {undefined}      无返回值
      */
     drawBeelines (points, closed = false, color = false) {
+      if (!points.length) return false
       // 方法
       const { drawBeeline } = this
 
@@ -283,6 +285,7 @@ export default {
      * @return     {undefined}  无返回值
      */
     drawLinesMiddlePoints (points, closed = false) {
+      if (!points.length) return false
       // 方法
       const { calcLinesMiddlePoints, drawPoint } = this
 
@@ -306,6 +309,7 @@ export default {
      * @return     {[{x, y}, ...]}  中点集 {Array} {[{Int, Int}]}
      */
     calcLinesMiddlePoints (points, closed = false) {
+      if (!points.length) return false
       // 方法
       const { calcLineMiddlePoint } = this
 
@@ -345,6 +349,7 @@ export default {
      * @return     {undefined}      无返回值
      */
     drawMiddlePointsLines (points, closed = false) {
+      if (!points.length) return false
       // 方法
       const { drawBeelines, calcLinesMiddlePoints } = this
 
@@ -355,10 +360,72 @@ export default {
       drawBeelines(middlePoints, closed, middlePointsLinesColor)
     },
     /**
-     * @description      绘制 绘制点中点连线的对应边的比例点
+     * @description                 绘制 绘制点中点连线的对应边的比例点
+     * @param      {[{x, y}, ...]}  绘制点集 {[{Int, Int}, ...]}
+     * @param      {closed}         绘制线段是否闭合 {boolean}
+     * @return     {undefined}      无返回值
      */
-    drawMiddlePointsLinesScalePoints () {
+    drawMiddlePointsLinesScalePoints (points, closed = false) {
+      if (points.length < 3) return false
 
+      const { calcMiddlePointsLinesScalePoints, drawPoints } = this
+
+      const middlePointsLinesScalePoints = calcMiddlePointsLinesScalePoints(points, closed)
+
+      drawPoints(middlePointsLinesScalePoints)
+    },
+    /**
+     * @description                 获取 绘制点中点连线的对应边的比例点
+     * @param      {[{x, y}, ...]}  绘制点集 {[{Int, Int}, ...]}
+     * @param      {closed}         绘制线段是否闭合 {boolean}
+     * @return     {[{x, y}, ...]}  计算结果点集
+     */
+    calcMiddlePointsLinesScalePoints (points, closed = false) {
+      if (points.length < 3) return false
+
+      // 方法
+      const { calcMiddlePointLineScalePoint } = this
+
+      const { lineClosedStatus } = this
+
+      const { length: pointsNum } = points
+
+      const middlePointsLinesScalePoints = points.map((point, index) => {
+        if (index > pointsNum - 3) return false
+
+        return calcMiddlePointLineScalePoint([
+          point,
+          point[index + 1],
+          point[index + 2]
+        ])
+      })
+
+      middlePointsLinesScalePoints.splice(pointsNum - 2, 2)
+
+      lineClosedStatus && middlePointsLinesScalePoints.push([
+        points[pointsNum - 2],
+        points[pointsNum - 1],
+        points[0]
+      ]) && middlePointsLinesScalePoints.push([
+        points[pointsNum - 1],
+        points[0],
+        points[1]
+      ])
+
+      return middlePointsLinesScalePoints
+    },
+    /**
+     * @description                  获取 绘制点中点连线的对应边的比例点
+     * @param      {[{x, y}, ...3]}  主线 点坐标 共三个点 {[{Int, Int}, ...3]}
+     * @return     {{x, y}}          计算结果点坐标
+     */
+    calcMiddlePointLineScalePoint ([lineBegin, lineMiddle, lineEnd]) {
+      const { calcLineMiddlePoint } = this
+
+      const middlePointsLineBegin = calcLineMiddlePoint(lineBegin, lineMiddle)
+      const middlePointsLineEnd = calcLineMiddlePoint(lineMiddle, lineEnd)
+
+      
     },
     /**
      * @description            绘制曲线
