@@ -11,6 +11,8 @@
         @click="changeDrawStatus('linesMiddlePointsStatus')">LMP</div>
       <div :class="{red: enhance.middlePointsLinesStatus}"
         @click="changeDrawStatus('middlePointsLinesStatus')">MPL</div>
+      <div :class="{red: enhance.middlePointsLinesScalePointsStatus}"
+        @click="changeDrawStatus('middlePointsLinesScalePointsStatus')">MPLSP</div>
     </div>
     <canvas
       id="points-to-smooth-line-canvas"
@@ -168,8 +170,18 @@ export default {
       // 获取增强元素状态
       const { pointsStatus, beelinesStatus, curvesStatus } = enhance
 
-      // 绘制 绘制点
-      pointsStatus && drawPoints(drawData)
+      {
+        // 参数
+        const { pointsRadius: radius, color: { pointsColor: color } } = this
+
+        const config = {
+          radius,
+          color
+        }
+
+        // 绘制 绘制点
+        pointsStatus && drawPoints(drawData, config)
+      }
 
       // 绘制 绘制点连线
       beelinesStatus && drawBeelines(drawData, lineClosedStatus)
@@ -195,18 +207,16 @@ export default {
     /**
      * @description                 绘制 绘制点
      * @param      {[{x, y}, ...]}  点数据集 每个元素都是包涵点坐标的对象 {Array}
+     * @param      {radius, color}  绘制球点配置项 球点半径及填充色
      * @return     {undefined}      无返回值
      */
-    drawPoints (points) {
+    drawPoints (points, {radius = 10, color = '#000'}) {
       if (!points.length) return false
       // 方法
       const { drawPoint } = this
 
-      // 参数
-      const { pointsRadius, color: { pointsColor } } = this
-
       points.map(({ x, y }) => {
-        const point = { x, y, radius: pointsRadius, color: pointsColor }
+        const point = { x, y, radius, color }
 
         drawPoint(point)
       })
@@ -372,7 +382,16 @@ export default {
 
       const middlePointsLinesScalePoints = calcMiddlePointsLinesScalePoints(points, closed)
 
-      drawPoints(middlePointsLinesScalePoints)
+      // 参数
+      const { middlePointsLinesScalePointsRadius: radius,
+        color: { middlePointsLinesScalePointsColor: color } } = this
+
+      const config = {
+        radius,
+        color
+      }
+
+      drawPoints(middlePointsLinesScalePoints, config)
     },
     /**
      * @description                 获取 绘制点中点连线的对应边的比例点
@@ -395,22 +414,22 @@ export default {
 
         return calcMiddlePointLineScalePoint([
           point,
-          point[index + 1],
-          point[index + 2]
+          points[index + 1],
+          points[index + 2]
         ])
       })
 
       middlePointsLinesScalePoints.splice(pointsNum - 2, 2)
 
-      lineClosedStatus && middlePointsLinesScalePoints.push([
+      lineClosedStatus && middlePointsLinesScalePoints.push(calcMiddlePointLineScalePoint([
         points[pointsNum - 2],
         points[pointsNum - 1],
         points[0]
-      ]) && middlePointsLinesScalePoints.push([
+      ])) && middlePointsLinesScalePoints.push(calcMiddlePointLineScalePoint([
         points[pointsNum - 1],
         points[0],
         points[1]
-      ])
+      ]))
 
       return middlePointsLinesScalePoints
     },
@@ -420,12 +439,41 @@ export default {
      * @return     {{x, y}}          计算结果点坐标
      */
     calcMiddlePointLineScalePoint ([lineBegin, lineMiddle, lineEnd]) {
-      const { calcLineMiddlePoint } = this
+      const { calcLineMiddlePoint, calcTwoPointsDistance, calcTwoPointsTypeBeelinePointPosByXPos } = this
 
+      // 计算两个中点坐标
       const middlePointsLineBegin = calcLineMiddlePoint(lineBegin, lineMiddle)
       const middlePointsLineEnd = calcLineMiddlePoint(lineMiddle, lineEnd)
 
-      
+      // 计算两个主线长度
+      const mainLineBeginLength = calcTwoPointsDistance(lineBegin, lineMiddle)
+      const mainLineEndLength = calcTwoPointsDistance(lineMiddle, lineEnd)
+
+      // 计算中点的X坐标差值
+      const middlePointsMinusX = middlePointsLineEnd.x - middlePointsLineBegin.x
+
+      // 计算起始主线占主线总长度百分比
+      const mainLineBeginLengthInTotalPercent = mainLineBeginLength / (mainLineBeginLength + mainLineEndLength)
+
+      // 根据相似三角形等比关系计算比例点X坐标
+      const scalePointXPos = middlePointsLineBegin.x + (mainLineBeginLengthInTotalPercent * middlePointsMinusX)
+
+      return calcTwoPointsTypeBeelinePointPosByXPos([
+        middlePointsLineBegin,
+        middlePointsLineEnd
+      ], scalePointXPos)
+    },
+    /**
+     * @description                    通过X坐标计算两点式直线方程上的一点完整点坐标
+     * @param      {[{x, y}, {x, y}]}  直线方程上两点 {[{Int, Int}, {Int, Int}]}
+     * @param      {xPos}              被求点坐标的X坐标 {Int}
+     * @return     {{x, y}}            被求点 完整点坐标
+     */
+    calcTwoPointsTypeBeelinePointPosByXPos ([{x: bx, y: by}, {x: ex, y: ey}], xPos) {
+      return {
+        x: xPos,
+        y: (xPos - bx) / (ex - bx) * (ey - by) + by
+      }
     },
     /**
      * @description            绘制曲线
