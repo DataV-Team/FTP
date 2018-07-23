@@ -46,7 +46,9 @@ export default {
         // 绘制点中点的显示状态
         linesMiddlePointsStatus: true,
         // 绘制点中点连线显示状态
-        middlePointsLinesStatus: true
+        middlePointsLinesStatus: true,
+        // 绘制点中点连线的对应边比例点显示状态
+        middlePointsLinesScalePointsStatus: true
       },
       // 颜色
       color: {
@@ -58,6 +60,8 @@ export default {
         linesMiddlePointsColor: '#69d2cd',
         // 绘制点连线中点连线颜色 黄色
         middlePointsLinesColor: '#fed368',
+        // 绘制点中点连线的对应边比例点颜色
+        middlePointsLinesScalePointsColor: '#f06183',
         // 曲线颜色 绿色
         curvesColor: '#69d2cd'
       },
@@ -68,6 +72,8 @@ export default {
       pointsRadius: 15,
       // 中点球点半径
       middlePointsRadius: 7,
+      // 绘制点中点连线的对应边比例点的半径
+      middlePointsLinesScalePointsRadius: 7,
       // 线条宽度
       lineWidth: 3
     }
@@ -172,16 +178,19 @@ export default {
       curvesStatus && drawCurveLines(drawData, lineClosedStatus)
 
       // 方法
-      const { drawLinesMiddlePoints, drawMiddlePointsLines } = this
+      const { drawLinesMiddlePoints, drawMiddlePointsLines, drawMiddlePointsLinesScalePoints } = this
 
       // 获取增强元素状态
-      const { linesMiddlePointsStatus, middlePointsLinesStatus } = enhance
+      const { linesMiddlePointsStatus, middlePointsLinesStatus, middlePointsLinesScalePointsStatus } = enhance
 
       // 绘制 绘制点连线中点
       linesMiddlePointsStatus && drawLinesMiddlePoints(drawData, lineClosedStatus)
 
       // 绘制 绘制点连线中点连线
       middlePointsLinesStatus && drawMiddlePointsLines(drawData, lineClosedStatus)
+
+      // 绘制 绘制点连线中点连线的对应边比例点
+      middlePointsLinesScalePointsStatus && drawMiddlePointsLinesScalePoints(drawData, lineClosedStatus)
     },
     /**
      * @description                 绘制 绘制点
@@ -344,6 +353,12 @@ export default {
       const middlePoints = calcLinesMiddlePoints(points, closed)
 
       drawBeelines(middlePoints, closed, middlePointsLinesColor)
+    },
+    /**
+     * @description      绘制 绘制点中点连线的对应边的比例点
+     */
+    drawMiddlePointsLinesScalePoints () {
+
     },
     /**
      * @description            绘制曲线
