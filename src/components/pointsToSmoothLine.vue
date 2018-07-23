@@ -2,7 +2,7 @@
   <div id="points-to-smooth-line">
     <div class="action">
       <div class="red" @click="reDraw">reDraw</div>
-      <input type="text" placeholder="K">
+      <input type="text" v-model="kValue" placeholder="K">
       <div :class="{red: enhance.pointsStatus}"
         @click="changeDrawStatus('pointsStatus')">Points</div>
       <div :class="{red: enhance.beelinesStatus}"
@@ -13,6 +13,10 @@
         @click="changeDrawStatus('middlePointsLinesStatus')">MPL</div>
       <div :class="{red: enhance.middlePointsLinesScalePointsStatus}"
         @click="changeDrawStatus('middlePointsLinesScalePointsStatus')">MPLSP</div>
+      <div :class="{red: enhance.transformedScalePointsStatus}"
+        @click="changeDrawStatus('transformedScalePointsStatus')">TSP</div>
+      <div :class="{red: enhance.transformedScalePointsConnectLinesStatus}"
+        @click="changeDrawStatus('transformedScalePointsConnectLinesStatus')">TSPL</div>
     </div>
     <canvas
       id="points-to-smooth-line-canvas"
@@ -50,7 +54,11 @@ export default {
         // 绘制点中点连线显示状态
         middlePointsLinesStatus: true,
         // 绘制点中点连线的对应边比例点显示状态
-        middlePointsLinesScalePointsStatus: true
+        middlePointsLinesScalePointsStatus: true,
+        // 绘制点中点连线的对应边比例点位移至顶点的点的显示状态
+        transformedScalePointsStatus: true,
+        // 绘制点中点连线的对应边比例点位移至顶点的点与顶点连线的显示状态
+        transformedScalePointsConnectLinesStatus: true
       },
       // 颜色
       color: {
@@ -62,11 +70,15 @@ export default {
         linesMiddlePointsColor: '#69d2cd',
         // 绘制点连线中点连线颜色 黄色
         middlePointsLinesColor: '#fed368',
-        // 绘制点中点连线的对应边比例点颜色
+        // 绘制点中点连线的对应边比例点颜色 红色
         middlePointsLinesScalePointsColor: '#f06183',
+        // 绘制点中点连线的对应边比例点位移至顶点的点的颜色 绿色
+        transformedScalePointsColor: '#69d2cd',
         // 曲线颜色 绿色
         curvesColor: '#69d2cd'
       },
+      // 贝塞尔曲线锐利程度K值
+      kValue: 1,
 
       // 配置项
 
@@ -76,6 +88,8 @@ export default {
       middlePointsRadius: 7,
       // 绘制点中点连线的对应边比例点的半径
       middlePointsLinesScalePointsRadius: 7,
+      // 绘制点中点连线的对应边比例点位移至顶点的点的半径
+      transformedScalePointsRadius: 4,
       // 线条宽度
       lineWidth: 3
     }
@@ -203,6 +217,18 @@ export default {
 
       // 绘制 绘制点连线中点连线的对应边比例点
       middlePointsLinesScalePointsStatus && drawMiddlePointsLinesScalePoints(drawData, lineClosedStatus)
+
+      // 方法
+      const { drawTransformedScalePoints, drawTransformedScalePointsConnectLines } = this
+
+      // 获取增强元素状态
+      const { transformedScalePointsStatus, transformedScalePointsConnectLinesStatus } = enhance
+
+      // 绘制点中点连线的对应边比例点位移至顶点的点
+      transformedScalePointsStatus && drawTransformedScalePoints(drawData, lineClosedStatus)
+
+      // 绘制点中点连线的对应边比例点位移至顶点的点与顶点的连线
+      transformedScalePointsConnectLinesStatus && drawTransformedScalePointsConnectLines(drawData, lineClosedStatus)
     },
     /**
      * @description                 绘制 绘制点
@@ -474,6 +500,62 @@ export default {
         x: xPos,
         y: (xPos - bx) / (ex - bx) * (ey - by) + by
       }
+    },
+    /**
+     * @description                 绘制点中点连线的对应边比例点位移至顶点的点
+     * @param      {[{x, y}, ...]}  绘制点集 {[{Int, Int}, ...]}
+     * @param      {closed}         绘制线段是否闭合 {boolean}
+     * @return     {undefined}      无返回值
+     */
+    drawTransformedScalePoints (points, closed = false) {
+      const { calcTransformedScalePoints, drawPoints } = this
+
+      const transformedScalePoints = calcTransformedScalePoints(points, closed = false)
+
+      const { transformedScalePointsRadius: radius, color: { transformedScalePointsColor: color } } = this
+
+      const config = {
+        radius,
+        color
+      }
+
+      drawPoints(transformedScalePoints, config)
+    },
+    /**
+     * @description                 计算绘制点中点连线的对应边比例点位移至顶点的点集
+     * @param      {[{x, y}, ...]}  绘制点集 {[{Int, Int}, ...]}
+     * @param      {closed}         绘制线段是否闭合 {boolean}
+     * @return     {[{x, y}, ...]}  结果点集
+     */
+    calcTransformedScalePoints (points, closed = false) {
+      if (points.length < 3) return false
+
+      const { calcLinesMiddlePoints, calcMiddlePointsLinesScalePoints } = this
+
+      const { kValue } = this
+
+      const middlePoints = calcLinesMiddlePoints(points, closed = false)
+      const scalePoints = calcMiddlePointsLinesScalePoints(points, closed = false)
+
+      const { length: pointsNum } = points
+
+      const transformedScalePoints = points.map((point, index) => {
+        if (!index || index === pointsNum - 1) return false
+
+
+      })
+
+      transformedScalePoints.shift() && transformedScalePoints.pop()
+
+      return transformedScalePoints
+    },
+    /**
+     * @description                 获取 绘制点中点连线的对应边的比例点
+     * @param      {[{x, y}, ...]}  绘制点集 {[{Int, Int}, ...]}
+     * @param      {closed}         绘制线段是否闭合 {boolean}
+     * @return     {undefined}      无返回值
+     */
+    drawTransformedScalePointsConnectLines (points, closed = false) {
     },
     /**
      * @description            绘制曲线
