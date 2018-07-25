@@ -510,7 +510,7 @@ export default {
     drawTransformedScalePoints (points, closed = false) {
       const { calcTransformedScalePoints, drawPoints } = this
 
-      const transformedScalePoints = calcTransformedScalePoints(points, closed = false)
+      const transformedScalePoints = calcTransformedScalePoints(points, closed)
 
       const { transformedScalePointsRadius: radius, color: { transformedScalePointsColor: color } } = this
 
@@ -522,7 +522,7 @@ export default {
       drawPoints(transformedScalePoints, config)
     },
     /**
-     * @description                 计算绘制点中点连线的对应边比例点位移至顶点的点集
+     * @description                 计算绘制点中点等比例位移至顶点的点集
      * @param      {[{x, y}, ...]}  绘制点集 {[{Int, Int}, ...]}
      * @param      {closed}         绘制线段是否闭合 {boolean}
      * @return     {[{x, y}, ...]}  结果点集
@@ -530,24 +530,81 @@ export default {
     calcTransformedScalePoints (points, closed = false) {
       if (points.length < 3) return false
 
-      const { calcLinesMiddlePoints, calcMiddlePointsLinesScalePoints } = this
+      const { calcLinesMiddlePoints, calcMiddlePointsLinesScalePoints, calcTransformedScalePointsPosition } = this
 
-      const { kValue } = this
-
-      const middlePoints = calcLinesMiddlePoints(points, closed = false)
-      const scalePoints = calcMiddlePointsLinesScalePoints(points, closed = false)
+      const middlePoints = calcLinesMiddlePoints(points, closed)
+      const scalePoints = calcMiddlePointsLinesScalePoints(points, closed)
 
       const { length: pointsNum } = points
 
-      const transformedScalePoints = points.map((point, index) => {
+      const transformedScalePoints = []
+
+      points.map((point, index) => {
         if (!index || index === pointsNum - 1) return false
 
+        const params = [
+          middlePoints[index - 1],
+          middlePoints[index],
+          scalePoints[index - 1],
+          point
+        ]
 
+        transformedScalePoints.push(...calcTransformedScalePointsPosition(params))
       })
 
-      transformedScalePoints.shift() && transformedScalePoints.pop()
+      closed && transformedScalePoints.push(...calcTransformedScalePointsPosition([
+        middlePoints[pointsNum - 2],
+        middlePoints[pointsNum - 1],
+        scalePoints[pointsNum - 2],
+        points[pointsNum - 1]
+      ])) && transformedScalePoints.push(...calcTransformedScalePointsPosition([
+        middlePoints[pointsNum - 1],
+        middlePoints[0],
+        scalePoints[pointsNum - 1],
+        points[0]
+      ])) && console.error('yes')
 
       return transformedScalePoints
+    },
+    /**
+     * @description                  计算绘制点中点等比例位移至顶点的点集
+     * @param      {[{x, y}, ...4]}  数组内包含四个点坐标对象 起始中点 结束中点 中点上的比例点 基准顶点 {[{Int. Int}, ...4]}
+     * @return     {[{x, y}, ...2]}  两个中点位移后的点坐标信息 以数组为容器包裹抛出
+     */
+    calcTransformedScalePointsPosition ([{x: bx, y: by}, {x: ex, y: ey}, {x: sx, y: sy}, {x: mx, y: my}]) {
+      const minusX = mx - sx
+      const minusY = my - sy
+
+      const transformedPointB = {
+        x: bx + minusX,
+        y: by + minusY
+      }
+
+      const transformedPointE = {
+        x: ex + minusX,
+        y: ey + minusY
+      }
+
+      const { kValue } = this
+
+      const { calcAfterKPointsPosition } = this
+
+      return calcAfterKPointsPosition({x: mx, y: my}, kValue, [transformedPointB, transformedPointE])
+    },
+    /**
+     * @description                 计算点以另一点为中心 按K值缩放后的点坐标
+     * @param      {{x, y}}         中心点位置
+     * @param      {kValue}         K值
+     * @param      {[{x, y}, ...]}  被计算点坐标集 以数组为容器 每一个元素都是一个点坐标信息对象
+     * @return     {[{x, y}, ...]}  被计算点坐标结果集 以数组为容器 每一个元素都是一个点坐标信息对象
+     */
+    calcAfterKPointsPosition ({x: mx, y: my}, kValue, points) {
+      return points.map(({x, y}) => {
+        return {
+          x: ((x - mx) * kValue) + mx,
+          y: ((y - my) * kValue) + my
+        }
+      })
     },
     /**
      * @description                 获取 绘制点中点连线的对应边的比例点
