@@ -2,7 +2,7 @@
   <div id="points-to-smooth-line">
     <div class="action">
       <div class="red" @click="reDraw">reDraw</div>
-      <input type="text" v-model="kValue" placeholder="K">
+      <input type="text" v-model="kValue" @change="draw" placeholder="K">
       <div :class="{red: enhance.pointsStatus}"
         @click="changeDrawStatus('pointsStatus')">Points</div>
       <div :class="{red: enhance.beelinesStatus}"
@@ -49,8 +49,6 @@ export default {
         pointsStatus: true,
         // 直线的显示状态
         beelinesStatus: true,
-        // 曲线的显示状态
-        curvesStatus: true,
         // 绘制点中点的显示状态
         linesMiddlePointsStatus: true,
         // 绘制点中点连线显示状态
@@ -181,7 +179,7 @@ export default {
      */
     draw () {
       // 方法
-      const { drawPoints, drawBeelines, drawCurveLines } = this
+      const { drawPoints, drawBeelines } = this
 
       // 参数
       const { ctx, canvasWH, enhance, drawData, lineClosedStatus } = this
@@ -190,7 +188,7 @@ export default {
       ctx.clearRect(0, 0, canvasWH.width, canvasWH.height)
 
       // 获取增强元素状态
-      const { pointsStatus, beelinesStatus, curvesStatus } = enhance
+      const { pointsStatus, beelinesStatus } = enhance
 
       {
         // 参数
@@ -207,9 +205,6 @@ export default {
 
       // 绘制 绘制点连线
       beelinesStatus && drawBeelines(drawData, lineClosedStatus)
-
-      // 绘制 绘制点平滑线
-      curvesStatus && drawCurveLines(drawData, lineClosedStatus)
 
       // 方法
       const { drawLinesMiddlePoints, drawMiddlePointsLines, drawMiddlePointsLinesScalePoints } = this
@@ -654,6 +649,23 @@ export default {
      * @return     {undefined}      无返回值
      */
     drawSmoothLines (points, closed = false) {
+      if (points.length < 3) return false
+
+      const { calcBezierCurvePoints, drawBezierCurveLines } = this
+
+      const bezierCurvePoints = calcBezierCurvePoints(points, closed)
+
+      drawBezierCurveLines(bezierCurvePoints, closed)
+    },
+    /**
+     * @description                 根据绘制点 计算贝塞尔绘制点
+     * @param      {[{x, y}, ...]}  绘制点集 {[{Int, Int}, ...]}
+     * @param      {closed}         绘制线段是否闭合 {boolean}
+     * @return     {[{x, y}, ...]}  计算结果集
+     */
+    calcBezierCurvePoints (points, closed = false) {
+      if (points.length < 3) return false
+
       const { calcTransformedScalePoints, createBezierLinesPoint } = this
 
       const transformedPoints = calcTransformedScalePoints(points, closed)
@@ -668,6 +680,9 @@ export default {
         return bezierLinesPoints.push(createBezierLinesPoint(point, transformedPoints[2 * index - 2], transformedPoints[2 * index - 1]))
       })
 
+      !closed && bezierLinesPoints.unshift(createBezierLinesPoint(points[0])) &&
+      bezierLinesPoints.push(createBezierLinesPoint(points[pointsNum - 1]))
+
       closed && bezierLinesPoints.push(createBezierLinesPoint(points[pointsNum - 1],
         transformedPoints[2 * (pointsNum - 1) - 2],
         transformedPoints[2 * (pointsNum - 1) - 1])) &&
@@ -678,18 +693,66 @@ export default {
       return bezierLinesPoints
     },
     /**
+     * @description             生产BezierCurve绘制点
+     * @param      {{x, y}}     Main Point 主要绘制点
+     * @param      {{x, y}}     Last Control Point 上一个控制点
+     * @param      {{x, y}}     Current Control Point 当前控制点
+     * @return     {{mp: {x, y}, lcp: {x, y}, ccp: {x, y}}} 返回BezierCurve绘制点 包涵三个属性
+     */
+    createBezierLinesPoint (mp, lcp, ccp) {
+      !lcp && (lcp = mp)
+      !ccp && (ccp = mp)
+
+      return {
+        mp,
+        lcp,
+        ccp
+      }
+    },
+    /**
      * @description                 根据绘制点绘制贝塞尔曲线
-     * @param      {[{x, y}, ...]}  绘制点集 {[{Int, Int}, ...]}
+     * @param      {[{mp: {x, y}, lcp: {x, y}, ccp: {x, y}}, ...]}  绘制点集
      * @param      {closed}         绘制线段是否闭合 {boolean}
      * @return     {undefined}      无返回值
      */
-    drawCurveLines (points, closed = false) {
+    drawBezierCurveLines (points, closed = false) {
+      const { ctx, drawBezierCurveLine } = this
+
+      const { length: pointsNum } = points
+
+      const { lineWidth, color: { smoothLinesColor: color } } = this
+
+      const config = {
+        lineWidth,
+        color
+      }
+
+      {
+        const { x, y } = points[0].mp
+        ctx.moveTo(x, y)
+      }
+
+      points.forEach((point, index) => {
+        if (index === pointsNum - 1) return false
+
+        drawBezierCurveLine(point, points[index + 1], config)
+      })
+
+      closed && drawBezierCurveLine(points[pointsNum - 1], points[0], config)
     },
     /**
      * @description             根据绘制点绘制贝塞尔曲线
      * @return     {undefined}  无返回值
      */
-    drawCurveLine () {
+    drawBezierCurveLine ({ ccp: { x: cx, y: cy } }, { lcp: { x: lx, y: ly }, mp: { x: ex, y: ey } }, { lineWidth, color }) {
+      const { ctx } = this
+
+      ctx.bezierCurveTo(cx, cy, lx, ly, ex, ey)
+
+      ctx.lineWidth = lineWidth
+      ctx.strokeStyle = color
+
+      ctx.stroke()
     },
     /**
      * @description             重新绘制
