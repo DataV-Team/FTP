@@ -6,7 +6,7 @@
       <div :class="{red: enhance.pointsStatus}"
         @click="changeDrawStatus('pointsStatus')">Points</div>
       <div :class="{red: enhance.beelinesStatus}"
-        @click="changeDrawStatus('beelinesStatus')">beeline</div>
+        @click="changeDrawStatus('beelinesStatus')">Beeline</div>
       <div :class="{red: enhance.linesMiddlePointsStatus}"
         @click="changeDrawStatus('linesMiddlePointsStatus')">LMP</div>
       <div :class="{red: enhance.middlePointsLinesStatus}"
@@ -17,6 +17,8 @@
         @click="changeDrawStatus('transformedScalePointsStatus')">TSP</div>
       <div :class="{red: enhance.transformedScalePointsConnectLinesStatus}"
         @click="changeDrawStatus('transformedScalePointsConnectLinesStatus')">TSPL</div>
+      <div :class="{red: enhance.smoothLinesStatus}"
+        @click="changeDrawStatus('smoothLinesStatus')">SL</div>
     </div>
     <canvas
       id="points-to-smooth-line-canvas"
@@ -58,7 +60,9 @@ export default {
         // 绘制点中点连线的对应边比例点位移至顶点的点的显示状态
         transformedScalePointsStatus: true,
         // 绘制点中点连线的对应边比例点位移至顶点的点与顶点连线的显示状态
-        transformedScalePointsConnectLinesStatus: true
+        transformedScalePointsConnectLinesStatus: true,
+        // 绘制点的平滑曲线显示状态
+        smoothLinesStatus: true
       },
       // 颜色
       color: {
@@ -74,8 +78,10 @@ export default {
         middlePointsLinesScalePointsColor: '#f06183',
         // 绘制点中点连线的对应边比例点位移至顶点的点的颜色 绿色
         transformedScalePointsColor: '#69d2cd',
+        // 绘制点中点位移后与顶点连线的颜色 黄色
+        transformedScalePointsConnectLinesColor: '#69d2cd',
         // 曲线颜色 绿色
-        curvesColor: '#69d2cd'
+        smoothLinesColor: '#69d2cd'
       },
       // 贝塞尔曲线锐利程度K值
       kValue: 1,
@@ -91,7 +97,9 @@ export default {
       // 绘制点中点连线的对应边比例点位移至顶点的点的半径
       transformedScalePointsRadius: 4,
       // 线条宽度
-      lineWidth: 3
+      lineWidth: 3,
+      // 绘制点中点位移后与顶点连线的宽度
+      transformedScalePointsConnectLinesWidth: 1
     }
   },
   methods: {
@@ -219,16 +227,19 @@ export default {
       middlePointsLinesScalePointsStatus && drawMiddlePointsLinesScalePoints(drawData, lineClosedStatus)
 
       // 方法
-      const { drawTransformedScalePoints, drawTransformedScalePointsConnectLines } = this
+      const { drawTransformedScalePoints, drawTransformedScalePointsConnectLines, drawSmoothLines } = this
 
       // 获取增强元素状态
-      const { transformedScalePointsStatus, transformedScalePointsConnectLinesStatus } = enhance
+      const { transformedScalePointsStatus, transformedScalePointsConnectLinesStatus, smoothLinesStatus } = enhance
 
       // 绘制点中点连线的对应边比例点位移至顶点的点
       transformedScalePointsStatus && drawTransformedScalePoints(drawData, lineClosedStatus)
 
       // 绘制点中点连线的对应边比例点位移至顶点的点与顶点的连线
       transformedScalePointsConnectLinesStatus && drawTransformedScalePointsConnectLines(drawData, lineClosedStatus)
+
+      // 绘制平滑曲线
+      smoothLinesStatus && drawSmoothLines(drawData, lineClosedStatus)
     },
     /**
      * @description                 绘制 绘制点
@@ -293,12 +304,12 @@ export default {
       closed && drawBeeline(points[pointsNum - 1], points[0], lineWidth, color || beelinesColor)
     },
     /**
-     * @description             绘制 点连线
-     * @param      {{x, y}}     线段起始点 {Object} {{Int, Int}}
-     * @param      {{x, y}}     线段终止点
-     * @param      {lineWidth}  线段宽度 {Int}
-     * @param      {lineColor}  线段颜色 {String}
-     * @return     {undefined}  无返回值
+     * @description                  绘制 点连线
+     * @param      {{x, y}}          线段起始点 {Object} {{Int, Int}}
+     * @param      {{x, y}}          线段终止点
+     * @param      {lineWidth}       线段宽度 {Int}
+     * @param      {lineColor}       线段颜色 {String}
+     * @return     {[{x, y}, ...2]}  两个绘制点 以数组为容器包裹返回
      */
     drawBeeline ({x: bx, y: by}, {x: ex, y: ey}, lineWidth = 3, lineColor = '#000') {
       const { ctx } = this
@@ -313,6 +324,8 @@ export default {
       ctx.lineWidth = lineWidth
       ctx.strokeStyle = lineColor
       ctx.stroke()
+
+      return [{x: bx, y: by}, {x: ex, y: ey}]
     },
     /**
      * @description             绘制连线中点 点标记
@@ -562,7 +575,7 @@ export default {
         middlePoints[0],
         scalePoints[pointsNum - 1],
         points[0]
-      ])) && console.error('yes')
+      ]))
 
       return transformedScalePoints
     },
@@ -607,21 +620,73 @@ export default {
       })
     },
     /**
-     * @description                 获取 绘制点中点连线的对应边的比例点
+     * @description                 获取 绘制点中点位移后与顶点连线
      * @param      {[{x, y}, ...]}  绘制点集 {[{Int, Int}, ...]}
      * @param      {closed}         绘制线段是否闭合 {boolean}
      * @return     {undefined}      无返回值
      */
     drawTransformedScalePointsConnectLines (points, closed = false) {
+      const { calcTransformedScalePoints, drawBeeline } = this
+
+      const transformedPoints = calcTransformedScalePoints(points, closed)
+
+      const { length: pointsNum } = points
+
+      const { color: { transformedScalePointsConnectLinesColor: color },
+        transformedScalePointsConnectLinesWidth: lineWidth } = this
+
+      points.map((point, index) => {
+        if (!index || index === pointsNum - 1) return false
+
+        drawBeeline(point, transformedPoints[2 * index - 2], lineWidth, color)
+        drawBeeline(point, transformedPoints[2 * index - 1], lineWidth, color)
+      })
+
+      closed && drawBeeline(points[pointsNum - 1], transformedPoints[2 * (pointsNum - 1) - 2], lineWidth, color) &&
+        drawBeeline(points[pointsNum - 1], transformedPoints[2 * (pointsNum - 1) - 1], lineWidth, color) &&
+        drawBeeline(points[0], transformedPoints[2 * pointsNum - 2], lineWidth, color) &&
+        drawBeeline(points[0], transformedPoints[2 * pointsNum - 1], lineWidth, color)
     },
     /**
-     * @description            绘制曲线
-     * @return    {undefined}  无返回值
+     * @description                 根据绘制点 绘制平滑曲线
+     * @param      {[{x, y}, ...]}  绘制点集 {[{Int, Int}, ...]}
+     * @param      {closed}         绘制线段是否闭合 {boolean}
+     * @return     {undefined}      无返回值
      */
-    drawCurveLines () {
+    drawSmoothLines (points, closed = false) {
+      const { calcTransformedScalePoints, createBezierLinesPoint } = this
+
+      const transformedPoints = calcTransformedScalePoints(points, closed)
+
+      const { length: pointsNum } = points
+
+      const bezierLinesPoints = []
+
+      points.map((point, index) => {
+        if (!index || index === pointsNum - 1) return false
+
+        return bezierLinesPoints.push(createBezierLinesPoint(point, transformedPoints[2 * index - 2], transformedPoints[2 * index - 1]))
+      })
+
+      closed && bezierLinesPoints.push(createBezierLinesPoint(points[pointsNum - 1],
+        transformedPoints[2 * (pointsNum - 1) - 2],
+        transformedPoints[2 * (pointsNum - 1) - 1])) &&
+        bezierLinesPoints.push(createBezierLinesPoint(points[0],
+          transformedPoints[2 * pointsNum - 2],
+          transformedPoints[2 * pointsNum - 1]))
+
+      return bezierLinesPoints
     },
     /**
-     * @description             绘制贝塞尔曲线
+     * @description                 根据绘制点绘制贝塞尔曲线
+     * @param      {[{x, y}, ...]}  绘制点集 {[{Int, Int}, ...]}
+     * @param      {closed}         绘制线段是否闭合 {boolean}
+     * @return     {undefined}      无返回值
+     */
+    drawCurveLines (points, closed = false) {
+    },
+    /**
+     * @description             根据绘制点绘制贝塞尔曲线
      * @return     {undefined}  无返回值
      */
     drawCurveLine () {

@@ -459,8 +459,6 @@ export default {
       speedItem.style.left = value + 'px'
     }
   },
-  created () {
-  },
   mounted () {
     let vm = this
 
