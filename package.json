@@ -30,9 +30,8 @@
     "url": "https://github.com/jiaming743/ftp/issues"
   },
   "keywords": [
-    "colorful",
-    "node",
-    "console"
+    "ftp",
+    "promisify"
   ],
   "dependencies": {
     "@types/ftp": "^0.3.31",
