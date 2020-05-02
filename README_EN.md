@@ -1,4 +1,4 @@
-[ENGLISH](./README_EN.md)
+[中文](./README.md)
 
 <h1 align="center">FTP</h1>
 
@@ -11,7 +11,7 @@
     </a>
 </p>
 
-### 基于 FTP 封装的 Promisify FTP
+### Promisify FTP
 
 - **[put](#put)**
 
@@ -25,13 +25,13 @@
 
 - **[deleteFile](#deleteFile)**
 
-### npm 安装
+### Install width npm
 
 ```shell
 $ npm install @jiaminghi/ftp
 ```
 
-### 使用
+### Use
 
 ```typescript
 import { put, mkDir } from '@jiaminghi/ftp'
@@ -39,7 +39,7 @@ import { put, mkDir } from '@jiaminghi/ftp'
 // do something
 ```
 
-<h3 align="center">示例</h3>
+<h3 align="center">Examples</h3>
 
 #### put
 

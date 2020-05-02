@@ -1,29 +1,36 @@
-// https://eslint.org/docs/user-guide/configuring
-
 module.exports = {
-  root: true,
-  parserOptions: {
-    parser: 'babel-eslint'
-  },
+  parser: '@typescript-eslint/parser',
+
+  plugins: ['@typescript-eslint'],
+
   env: {
-    browser: true,
+    es6: true,
   },
-  extends: [
-    // https://github.com/vuejs/eslint-plugin-vue#priority-a-essential-error-prevention
-    // consider switching to `plugin:vue/strongly-recommended` or `plugin:vue/recommended` for stricter rules.
-    'plugin:vue/essential', 
-    // https://github.com/standard/standard/blob/master/docs/RULES-en.md
-    'standard'
-  ],
-  // required to lint *.vue files
-  plugins: [
-    'vue'
-  ],
-  // add your custom rules here
+
+  extends: ['plugin:@typescript-eslint/recommended'],
+
+  settings: {
+    'import/parsers': {
+      '@typescript-eslint/parser': ['.ts'],
+    },
+    'import/resolver': {
+      // use <root>/tsconfig.json
+      typescript: {},
+    },
+  },
+
   rules: {
-    // allow async-await
-    'generator-star-spacing': 'off',
-    // allow debugger during development
-    'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off'
-  }
+    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/ban-ts-ignore': 'off',
+    '@typescript-eslint/member-delimiter-style': 'off',
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      {
+        vars: 'all',
+        args: 'after-used',
+        ignoreRestSiblings: true,
+        argsIgnorePattern: '^_', // ignore unused variables whose name is '_'
+      },
+    ],
+  },
 }
