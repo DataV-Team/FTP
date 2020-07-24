@@ -1,6 +1,6 @@
 {
   "name": "@jiaminghi/ftp",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "JiaMing <743192023@qq.com>",
   "description": "Promisify FTP",
   "main": "lib/index.js",
