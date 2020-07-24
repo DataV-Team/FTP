@@ -1,12 +1,10 @@
 import Client from 'ftp'
 
-async function getList(ftp: Client, src: string): Promise<Client.ListingElement[] | false> {
-  return new Promise(resolve => {
+async function getList(ftp: Client, src: string): Promise<Client.ListingElement[]> {
+  return new Promise((resolve, reject) => {
     ftp.list(src, (err, list) => {
       if (err) {
-        console.error(err)
-
-        resolve(false)
+        reject(err)
       } else {
         resolve(list)
       }
@@ -14,37 +12,32 @@ async function getList(ftp: Client, src: string): Promise<Client.ListingElement[
   })
 }
 
-async function rmDir(ftp: Client, src: string, recusive = true): Promise<boolean> {
-  return new Promise(resolve => {
+async function rmDir(ftp: Client, src: string, recusive = true): Promise<void> {
+  return new Promise((resolve, reject) => {
     ftp.rmdir(src, recusive, err => {
       if (err) {
-        console.error(err)
-
-        resolve(false)
+        reject(err)
       } else {
-        resolve(true)
+        resolve()
       }
     })
   })
 }
 
-async function deleteFile(ftp: Client, src: string): Promise<boolean> {
-  return new Promise(resolve => {
+async function deleteFile(ftp: Client, src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
     ftp.delete(src, err => {
       if (err) {
-        console.error(err)
-
-        resolve(false)
+        reject(err)
       } else {
-        resolve(true)
+        resolve()
       }
     })
   })
 }
 
-async function emptyDir(ftp: Client, src: string, except: string[] = []): Promise<boolean> {
+async function emptyDir(ftp: Client, src: string, except: string[] = []): Promise<void> {
   const list = await getList(ftp, src)
-  if (!list) return false
 
   for (let i = 0, listNum = list.length; i < listNum; i++) {
     const { type, name } = list[i]
@@ -55,38 +48,32 @@ async function emptyDir(ftp: Client, src: string, except: string[] = []): Promis
     const fullSrc = `./${name}`
 
     if (type === 'd') {
-      if (!(await rmDir(ftp, fullSrc, true))) return false
+      await rmDir(ftp, fullSrc, true)
     } else {
-      if (!(await deleteFile(ftp, fullSrc))) return false
+      await deleteFile(ftp, fullSrc)
     }
   }
-
-  return true
 }
 
-async function put(ftp: Client, src: string, dest: string): Promise<boolean> {
-  return new Promise(resolve => {
+async function put(ftp: Client, src: string, dest: string): Promise<void> {
+  return new Promise((resolve, reject) => {
     ftp.put(src, dest, err => {
       if (err) {
-        console.error(err)
-
-        resolve(false)
+        reject(err)
       } else {
-        resolve(true)
+        resolve()
       }
     })
   })
 }
 
-async function mkDir(ftp: Client, src: string, recusive = true): Promise<boolean> {
-  return new Promise(resolve => {
+async function mkDir(ftp: Client, src: string, recusive = true): Promise<void> {
+  return new Promise((resolve, reject) => {
     ftp.mkdir(src, recusive, err => {
       if (err) {
-        console.error(err)
-
-        resolve(false)
+        reject(err)
       } else {
-        resolve(true)
+        resolve()
       }
     })
   })
